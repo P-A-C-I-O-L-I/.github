@@ -1,0 +1,49 @@
+name: Bug
+description: Un comportamiento incorrecto del sistema.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Si el problema expone datos, credenciales o permite acceder a información de otro tenant, **no lo reportes aquí**: sigue la política de seguridad.
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Descripción
+      description: Qué está fallando.
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducirlo
+      value: |
+        1. 
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Comportamiento esperado
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamiento actual
+      description: Incluye mensajes de error o logs relevantes.
+    validations:
+      required: true
+  - type: input
+    id: entorno
+    attributes:
+      label: Servicio y versión
+      placeholder: "pacioli-schema-registry 0.3.0, entorno local"
+    validations:
+      required: true
+  - type: checkboxes
+    id: datos
+    attributes:
+      label: Datos
+      options:
+        - label: Confirmo que este reporte, sus logs y sus capturas no contienen datos reales ni credenciales.
+          required: true
