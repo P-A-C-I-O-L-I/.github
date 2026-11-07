@@ -135,4 +135,4 @@ jobs:
       - name: Export locked dependencies
         run: uv export --locked --format requirements-txt --no-emit-project --output-file requirements-audit.txt
       - name: Audit dependencies
-        run: uvx --from "pip-audit>=2.9,<3" pip-audit --requirement requirements-audit.txt --no-deps --disable-pip --strict
+        run: uvx --from "pip-audit>=2.9,<3" pip-audit --requirement requirements-audit.txt --disable-pip --strict
