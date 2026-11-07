@@ -1,0 +1,37 @@
+name: Tarea
+description: Una unidad de trabajo con criterios de aceptación verificables.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Una tarea solo pasa a **Ready** si cumple la Definition of Ready: criterios de aceptación verificables, servicio y contrato identificados, dependencias conocidas y ADR aceptado si implica una decisión nueva.
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto
+      description: Qué problema resuelve y por qué es necesario.
+    validations:
+      required: true
+  - type: textarea
+    id: tareas
+    attributes:
+      label: Tareas
+      description: Pasos concretos para completar el trabajo.
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de aceptación
+      description: Condiciones verificables que confirman que la tarea está terminada.
+    validations:
+      required: true
+  - type: textarea
+    id: referencias
+    attributes:
+      label: Referencias
+      description: ADRs, contratos, issues relacionados o documentación.
+    validations:
+      required: false

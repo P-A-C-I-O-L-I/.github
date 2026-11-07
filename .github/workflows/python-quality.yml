@@ -1,0 +1,138 @@
+# =============================================================================
+# P A C I O L I · CI reutilizable para servicios Python
+#
+# Se invoca desde cada servicio con:
+#   uses: P-A-C-I-O-L-I/.github/.github/workflows/python-quality.yml@main
+#
+# Las acciones de terceros están fijadas a versiones exactas. Dependabot
+# propone sus actualizaciones en este repositorio.
+# =============================================================================
+name: Python quality
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: Versión de Python
+        type: string
+        default: "3.14"
+      source-dir:
+        description: Carpeta revisada por mypy
+        type: string
+        default: src
+      check-domain-coverage:
+        description: Exigir el umbral reforzado en la lógica de dominio
+        type: boolean
+        default: true
+      domain-coverage-path:
+        description: Archivos considerados lógica de dominio
+        type: string
+        default: "src/*/domain/*"
+      domain-coverage-min:
+        description: Cobertura mínima de la lógica de dominio
+        type: number
+        default: 85
+
+permissions:
+  contents: read
+
+env:
+  GITLEAKS_VERSION: "8.30.1"
+
+jobs:
+  lint:
+    name: Lint (Ruff)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          python-version: ${{ inputs.python-version }}
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: Check formatting
+        run: uv run ruff format --check .
+      - name: Check lint rules
+        run: uv run ruff check .
+
+  typecheck:
+    name: Type check (mypy)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          python-version: ${{ inputs.python-version }}
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: Run mypy
+        run: uv run mypy "${{ inputs.source-dir }}"
+
+  test:
+    name: Tests and coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          python-version: ${{ inputs.python-version }}
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --locked
+      - name: Run tests with global coverage threshold
+        run: uv run pytest --cov --cov-branch --cov-report=term-missing
+      - name: Enforce domain coverage threshold
+        if: ${{ inputs.check-domain-coverage }}
+        run: >
+          uv run coverage report
+          --include="${{ inputs.domain-coverage-path }}"
+          --fail-under=${{ inputs.domain-coverage-min }}
+
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install gitleaks (checksum verified)
+        run: |
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSLO "${base}/${tarball}"
+          curl -fsSLO "${base}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep " ${tarball}\$" "gitleaks_${GITLEAKS_VERSION}_checksums.txt" | sha256sum --check
+          tar -xzf "${tarball}" gitleaks
+          sudo install gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+      - name: Scan full history
+        run: gitleaks git --redact --verbose .
+
+  dependencies:
+    name: Dependency audit (pip-audit)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          python-version: ${{ inputs.python-version }}
+      - name: Export locked dependencies
+        run: uv export --locked --format requirements-txt --no-emit-project --output-file requirements-audit.txt
+      - name: Audit dependencies
+        run: uvx --from "pip-audit>=2.9,<3" pip-audit --requirement requirements-audit.txt --no-deps --disable-pip --strict
